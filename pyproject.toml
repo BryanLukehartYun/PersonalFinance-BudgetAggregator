@@ -1,0 +1,17 @@
+[project]
+name = "personalfinance-capitalnfcu-bryanspinoff"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pandas>=3.0.1",
+    "rapidfuzz>=3.14.3",
+    "sentence-transformers>=5.2.3",
+    "torch>=2.10.0",
+]
+[tool.uv]
+managed = true
+
+# This tells UV "I am the root, stop looking at /Users/bryan"
+[tool.uv.workspace]
