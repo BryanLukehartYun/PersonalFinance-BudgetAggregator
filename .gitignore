@@ -1,0 +1,30 @@
+# --- Data & Security (The "Shield") --- MAKE SURE THAT CSV IS INCLUDED
+*.csv 
+*.xlsx
+*.json
+!data_schema.json
+.env
+creds.json
+secret.py
+token.json
+
+# --- Python & Environment (The "Isolation") ---
+__pycache__/
+*.py[cod]
+.venv/
+.uv/
+.python-version
+# --- System Junk (The "Noise") ---
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.fuse_hidden*
+.directory
+
+# --- VS Code ---
+.vscode/
+!.vscode/launch.json
+
+# --- Folders and Files not included ---
+Deprecate/
