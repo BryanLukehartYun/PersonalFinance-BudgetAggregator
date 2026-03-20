@@ -10,10 +10,11 @@ import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
 
-DOWNLOADS    = os.path.join(os.path.expanduser("~"), "Downloads")
-SUMMARY_PATH = os.path.join(DOWNLOADS, "summary_report.csv")
-CHART_PATH   = os.path.join(DOWNLOADS, "spending_trends.png")
-SUMMARY_TXT  = os.path.join(DOWNLOADS, "spending_summary.txt")
+DOWNLOADS      = os.path.join(os.path.expanduser("~"), "Downloads")
+SUMMARY_PATH   = os.path.join(DOWNLOADS, "summary_report.csv")
+CHART_PATH     = os.path.join(DOWNLOADS, "spending_trends.png")
+BANK_CHART_PATH = os.path.join(DOWNLOADS, "spending_by_bank.png")
+SUMMARY_TXT    = os.path.join(DOWNLOADS, "spending_summary.txt")
 
 # ── Row 1 featured panels (adjust names to match your actual categories) ──
 # Matched case-insensitively; first match wins.
@@ -154,6 +155,12 @@ def build_spending_chart(df: pd.DataFrame) -> None:
     featured   = _resolve_featured(all_cats)        # list of 3 (name or None)
     rest_cats  = all_cats                           # master chart shows everything
 
+    # Date range for title
+    dates     = pd.to_datetime(df["date"], format="mixed")
+    date_from = dates.min().strftime("%b %Y")
+    date_to   = dates.max().strftime("%b %Y")
+    date_range = f"{date_from} – {date_to}" if date_from != date_to else date_from
+
     # ── Figure + GridSpec ─────────────────────
     plt.style.use("dark_background")
     fig = plt.figure(figsize=(18, 10))
@@ -168,7 +175,7 @@ def build_spending_chart(df: pd.DataFrame) -> None:
     )
 
     fig.suptitle(
-        "Month-over-Month Spending by Category",
+        f"Month-over-Month Spending by Category  ·  {date_range}",
         fontsize=17, fontweight="bold", color=_TEXT, y=1.02,
     )
 
@@ -356,6 +363,134 @@ def build_text_summary(df: pd.DataFrame) -> None:
 
 
 # ─────────────────────────────────────────────
+# 4. BANK SPENDING CHART  (stock-style, green/red segments)
+# ─────────────────────────────────────────────
+
+def build_bank_chart(df: pd.DataFrame) -> None:
+    work = df.copy()
+    work["date"]  = pd.to_datetime(work["date"], format="mixed")
+    work["month"] = work["date"].dt.to_period("M")
+    work = work[work["amount"] > 0]
+
+    if "source_bank" not in work.columns or work.empty:
+        print("[ANALYTICS] No bank data for bank chart.")
+        return
+
+    # Total spending per bank per month
+    bank_pivot = (
+        work.groupby(["source_bank", "month"])["amount"]
+        .sum()
+        .unstack(fill_value=0)
+    )
+
+    banks  = bank_pivot.index.tolist()
+    months = [str(p) for p in bank_pivot.columns]
+    x      = np.arange(len(months))
+
+    dates     = work["date"]
+    date_from = dates.min().strftime("%b %Y")
+    date_to   = dates.max().strftime("%b %Y")
+    date_range = f"{date_from} – {date_to}" if date_from != date_to else date_from
+
+    # Base colours per bank (neutral — segments will be green/red)
+    _BANK_BASE = ["#90CAF9", "#FFB74D", "#CE93D8", "#80DEEA"]
+
+    _UP   = "#00E676"   # green  — spending went up   (more outflow)
+    _DOWN = "#FF1744"   # red    — spending went down  (less outflow)
+    _FLAT = "#718096"
+
+    plt.style.use("dark_background")
+    fig, ax = plt.subplots(figsize=(14, 6))
+    fig.patch.set_facecolor(_BG)
+    ax.set_facecolor(_PANEL)
+
+    for spine in ax.spines.values():
+        spine.set_edgecolor(_GRID)
+        spine.set_linewidth(0.6)
+
+    ax.yaxis.grid(True, color=_GRID, linewidth=0.7, linestyle="--")
+    ax.set_axisbelow(True)
+
+    for bi, bank in enumerate(banks):
+        values     = bank_pivot.loc[bank].values.astype(float)
+        base_color = _BANK_BASE[bi % len(_BANK_BASE)]
+
+        # Draw segment-by-segment with green/red colouring
+        for i in range(len(x) - 1):
+            v0, v1 = values[i], values[i + 1]
+            seg_color = _UP if v1 > v0 else (_DOWN if v1 < v0 else _FLAT)
+            ax.plot(
+                [x[i], x[i + 1]], [v0, v1],
+                color=seg_color, linewidth=2.6, zorder=3, solid_capstyle="round",
+            )
+            # Glow pass
+            ax.plot(
+                [x[i], x[i + 1]], [v0, v1],
+                color=seg_color, linewidth=7, alpha=0.12, zorder=2,
+            )
+
+        # Markers coloured by direction vs previous point
+        for i, v in enumerate(values):
+            if i == 0:
+                dot_color = base_color
+            else:
+                dot_color = _UP if v > values[i - 1] else (_DOWN if v < values[i - 1] else _FLAT)
+            ax.scatter(x[i], v, color=dot_color, s=55, zorder=4,
+                       edgecolors=_PANEL, linewidths=1.5)
+
+        # Value label above each point
+        for i, v in enumerate(values):
+            if v > 0:
+                ax.annotate(
+                    _fmt_dollar(v),
+                    xy=(x[i], v), xytext=(0, 9),
+                    textcoords="offset points",
+                    ha="center", va="bottom",
+                    fontsize=7.2, color=base_color, fontweight="bold",
+                )
+
+        # Legend proxy line — single "Combined" entry for all banks
+        grand = bank_pivot.values.sum()
+        lbl   = f"Combined  (total {_fmt_dollar(grand)})" if bi == 0 else "_nolegend_"
+        ax.plot([], [], color=base_color, linewidth=2.6, label=lbl)
+
+    # ── Legend for up/down ──────────────────────
+    ax.plot([], [], color=_UP,   linewidth=2.5, label="▲ Spending up")
+    ax.plot([], [], color=_DOWN, linewidth=2.5, label="▼ Spending down")
+
+    ax.legend(
+        loc="upper left",
+        fontsize=8.5,
+        framealpha=0.15,
+        edgecolor="#2D3748",
+        facecolor="#1A202C",
+        labelcolor=_TEXT,
+        handlelength=1.5,
+    )
+
+    ax.set_title(
+        f"Monthly Spending by Bank  ·  {date_range}",
+        fontsize=14, fontweight="bold", color=_TEXT, pad=10,
+    )
+    ax.set_xticks(x)
+    ax.set_xticklabels(months, rotation=30, ha="right", fontsize=8.5, color=_SUBTEXT)
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: _fmt_dollar(v)))
+    ax.tick_params(axis="y", labelsize=8.5, colors=_SUBTEXT, length=0)
+    ax.tick_params(axis="x", length=0)
+    ax.set_ylim(bottom=0)
+
+    fig.text(
+        0.99, -0.02, "BudgetAggregator v1.2",
+        ha="right", va="bottom", fontsize=7, color="#2D3748",
+    )
+
+    plt.tight_layout()
+    fig.savefig(BANK_CHART_PATH, dpi=160, bbox_inches="tight", facecolor=_BG)
+    plt.close(fig)
+    print(f"🏦  Bank chart      → {BANK_CHART_PATH}")
+
+
+# ─────────────────────────────────────────────
 # PUBLIC ENTRY POINT
 # ─────────────────────────────────────────────
 
@@ -372,4 +507,5 @@ def run_analytics(df: pd.DataFrame) -> None:
     build_summary_report(df)
     build_text_summary(df)
     build_spending_chart(df)
+    build_bank_chart(df)
     print("[ANALYTICS] Done.\n")
