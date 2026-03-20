@@ -33,6 +33,7 @@ A fully local, privacy-first budget aggregator that combines transaction exports
 ```
 project/
 ├── budget_engine.py          # Main orchestrator — run this
+├── analytics.py              # Responsible for descriptive figures
 ├── mapping/
 │   └── category_map.json     # Direct lookup table (edit to add merchants)
 └── parsers/
@@ -108,17 +109,18 @@ Keys are matched case-insensitively as substrings, so `"TRADER JOE"` will catch 
 ---
 
 ## 🚀 Roadmap
+v1.1 - Release of Analytical Layer
+* [✅] Automated Spending Summary: Generation of a secondary summary.csv or report.pdf grouping totals by category and month.
 
-v1.0.X - Release of the Aggregator
+v1.1.X - Release of the Aggregator
 * [ ] Additional Parsers: Adding logic for Chase, Amex, and BoA to further "anonymize" the user's primary banking manifold. If you desire a specific bank, please make a pull request and attach a sample csv **ANONYMIZED WITH NO IDENTIFYING INFO**
 
-v1.1.0 - System Stability & Expansion
+v1.2.0 - System Stability & Expansion
 * [ ] Temporal Deduplication: Logic to identify and neutralize internal transfers (e.g., matching a -500 debit in Bank A with a +500 credit in Bank B within a 3-day window).
 * [ ] CLI-only Mode: Optional flags to bypass the Tkinter GUI for power users on Linux/CachyOS environments. 🐧🐧
+> Note: The CLI layer may not make the cut and may be shelved for future works. 
 
-v1.2.0 - Analytical Layer
-* [ ] Automated Spending Summary: Generation of a secondary summary.csv or report.pdf grouping totals by category and month.
-
+v1.3.0 - Analytical Layer (I'm trying to see how to package this)
 * [ ] State Estimation Visualization: Basic terminal-based or Matplotlib charts showing month-over-month trends.
 
 ---

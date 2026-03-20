@@ -1,5 +1,5 @@
 def main():
-    print("Hello from personalfinance-capitalnfcu-bryanspinoff!")
+    print("Hello from PersonalFinance-BudgetAggregator")
 
 
 if __name__ == "__main__":
