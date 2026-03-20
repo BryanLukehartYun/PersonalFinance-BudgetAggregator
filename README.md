@@ -110,7 +110,7 @@ Keys are matched case-insensitively as substrings, so `"TRADER JOE"` will catch 
 
 ## 🚀 Roadmap
 v1.1 - Release of Analytical Layer
-* [✅] Automated Spending Summary: Generation of a secondary summary.csv or report.pdf grouping totals by category and month.
+* [x] Automated Spending Summary: Generation of a secondary summary.csv or report.pdf grouping totals by category and month.
 
 v1.1.X - Release of the Aggregator
 * [ ] Additional Parsers: Adding logic for Chase, Amex, and BoA to further "anonymize" the user's primary banking manifold. If you desire a specific bank, please make a pull request and attach a sample csv **ANONYMIZED WITH NO IDENTIFYING INFO**
