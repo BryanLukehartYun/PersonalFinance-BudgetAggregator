@@ -16,6 +16,7 @@ from rapidfuzz import process, fuzz
 from sentence_transformers import SentenceTransformer, util
 
 from parsers import PARSERS   # auto-detection registry
+from analytics import run_analytics
 
 # ─────────────────────────────────────────────
 # CONFIG
@@ -253,6 +254,8 @@ def run_pipeline():
     print(f"    Layer 3 – Semantic   : {by_method.get('semantic', 0)}")
     print(f"    Layer 4 – Fallback   : {by_method.get('uncategorized', 0)}")
     print(f"\n📄  Saved to: {out_path}")
+
+    run_analytics(final_df)
 
 if __name__ == "__main__":
     run_pipeline()
